@@ -6,10 +6,13 @@ const clientConfig = {
   target: 'web',
   entry: './src/index.js',
   output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'editor.js'
+    path: path.resolve(__dirname, 'lib'),
+    filename: 'index.js',
+    libraryTarget: 'commonjs2'
   },
-  devtool: 'source-map',
+  optimization: {
+    minimize: false
+  },
   module: {
     rules: [
       {
@@ -28,12 +31,11 @@ const testConfig = {
   target: 'node',
   entry: './tests/index.js',
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'lib'),
     filename: 'test.js'
   },
   node: {global: true, fs: 'empty'},
   externals: [nodeExternals()],
-  devtool: 'source-map',
   module: {
     rules: [
       {
