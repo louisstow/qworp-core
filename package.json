@@ -1,0 +1,32 @@
+{
+  "name": "qworp-core",
+  "version": "0.1.0",
+  "description": "Core of QWORP client",
+  "dependencies": {
+    "prosemirror-collab": "*",
+    "prosemirror-commands": "*",
+    "prosemirror-history": "^1.0.4",
+    "prosemirror-keymap": "*",
+    "prosemirror-menu": "*",
+    "prosemirror-model": "*",
+    "prosemirror-state": "*",
+    "prosemirror-view": "*"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.3.4",
+    "@babel/preset-env": "^7.3.4",
+    "babel-loader": "^8.0.5",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.2.3",
+    "webpack-dev-server": "^3.2.1",
+    "webpack-node-externals": "^1.7.2"
+  },
+  "scripts": {
+    "test": "node ./dist/test.js",
+    "build": "webpack --mode=production",
+    "build:dev": "webpack --mode=development",
+    "watch": "webpack --watch",
+    "prepare": "npm run build"
+  }
+}
