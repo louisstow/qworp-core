@@ -10,9 +10,6 @@ const clientConfig = {
     filename: 'index.js',
     libraryTarget: 'commonjs2'
   },
-  optimization: {
-    minimize: false
-  },
   module: {
     rules: [
       {
