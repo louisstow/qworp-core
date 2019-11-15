@@ -150,7 +150,6 @@ const init = (editor, version, doc, websocketUrl) => {
 		},
 
 		clipboardTextSerializer (slice) {
-			console.log(slice.content.textBetween(0, slice.content.size, "\n", "\n"))
 			const nodes = [];
 			slice.content.nodesBetween(0, slice.content.size, node => {
 				if (node.isBlock) { 
@@ -216,7 +215,6 @@ const init = (editor, version, doc, websocketUrl) => {
 			view.shouldUpdate = execResponse.docChanged;
 			view.updateState(execResponse.currentState);
 
-			console.log('tick');
 			lastUpdated = now;
 
 			collabOrchestrator.localSyncRequest();
