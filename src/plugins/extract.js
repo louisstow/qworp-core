@@ -22,10 +22,6 @@ class TokenStream extends BaseTokenStream {
 		}
 	}
 
-	readTag () {
-		return this.readWhile(is_tag);
-	}
-
 	readCode () {
 		let str = '';
 		while (!this.istream.eof()) {

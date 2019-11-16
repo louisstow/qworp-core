@@ -61,7 +61,7 @@ class Connection extends EventEmitter {
 		this.emit('CONNECT');
 
 		while (this.queue.length) {
-			const m = this.queue.unshift();
+			const m = this.queue.shift();
 			this.send(m);
 		}
 	}
