@@ -92,6 +92,10 @@ class Connection extends EventEmitter {
 		if (!this.connected) { return; }
 		return this.ws.send(JSON.stringify({ type: 'ping' }));
 	}
+
+	handlePong () {
+		
+	}
 };
 
 export default Connection;

@@ -32,6 +32,8 @@ class CollabOrchestrator {
 			window.dispatchEvent(new CustomEvent("onlineChange", { detail: msg }));
 		} else if (msg.type === 'error') {
 			window.dispatchEvent(new CustomEvent("collabError", { detail: msg }));
+		} else if (msg.type === 'pong') {
+			this.conn.handlePong();
 		} else {
 			this.collabState.handle(msg.type, msg);
 		}
