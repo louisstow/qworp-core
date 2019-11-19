@@ -16,6 +16,8 @@ class Connection extends EventEmitter {
 		this.timeout = null;
 
 		this.connect();
+
+		window.addEventListener('RECONNECT', this.reconnect.bind(this));
 	}
 
 	connect () {
@@ -34,6 +36,10 @@ class Connection extends EventEmitter {
 		this.timeout = setTimeout(() => this.onTimeout(), TIMEOUT_MS);
 
 		return true;
+	}
+
+	reconnect () {
+		this.ws.close();
 	}
 
 	onTimeout () {
@@ -55,7 +61,7 @@ class Connection extends EventEmitter {
 		this.emit('CONNECT');
 
 		while (this.queue.length) {
-			const m = this.queue.unshift();
+			const m = this.queue.shift();
 			this.send(m);
 		}
 	}

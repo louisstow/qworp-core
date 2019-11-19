@@ -1,16 +1,15 @@
 {
   "name": "qworp-core",
-  "version": "1.0.4",
+  "version": "1.0.7",
   "description": "Core of QWORP client",
   "dependencies": {
-    "prosemirror-collab": "*",
-    "prosemirror-commands": "*",
+    "prosemirror-collab": "^1.2.0",
+    "prosemirror-commands": "^1.1.0",
     "prosemirror-history": "^1.0.4",
-    "prosemirror-keymap": "*",
-    "prosemirror-menu": "*",
-    "prosemirror-model": "*",
-    "prosemirror-state": "*",
-    "prosemirror-view": "*"
+    "prosemirror-keymap": "^1.1.0",
+    "prosemirror-model": "^1.8.0",
+    "prosemirror-state": "^1.3.0",
+    "prosemirror-view": "^1.13.2"
   },
   "devDependencies": {
     "@babel/cli": "^7.2.3",

@@ -52,7 +52,6 @@ function before (stdin, args) {
 
 		const trimmedText = trimTail(text, node.attrs.head, node.attrs.tail);
 
-		// console.log('before', JSON.stringify({head, trimmedText, template}))
 		if (once && head) {
 			return;
 		}
