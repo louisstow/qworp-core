@@ -122,126 +122,135 @@ const clipboardParser = {
 	}
 };
 
-const init = (editor, version, doc, websocketUrl) => {
-	const state = EditorState.create({
-		doc: schema.nodeFromJSON(doc),
-		schema,
-		plugins: [
-			docStructPlugin(docStructKey),
-			history(),
-			indentKeymap(),
-			keymap({ "Mod-z": undo, "Mod-y": redo }),
-			keymap(baseKeymap),
-			decorationPlugin,
-			nodeviewPlugin,
-			collab({ version: version })
-		]
-	});
-
-	const view = new EditorView(editor, {
-		state,
-		dispatchTransaction (tr) {
-			if (tr.docChanged) {
-				view.shouldUpdate = true;
-			}
-
-			const newState = view.state.apply(tr);
-			view.updateState(newState);
-		},
-
-		clipboardTextSerializer (slice) {
-			const nodes = [];
-			slice.content.nodesBetween(0, slice.content.size, node => {
-				if (node.isBlock) { 
-					nodes.push(node.textContent);
-				}
-			})
-
-			return nodes.join('\n');
-		},
-
-		clipboardParser,
-
-		clipboardTextParser (text, $context) {
-			const blocks = text.split(/(?:\r\n?|\n)/);
-			const nodes = [];
-
-			blocks.forEach(b => {
-				nodes.push(Node.fromJSON(schema, {
-					type: 'block',
-					content: b ? [
-						{type: 'text', text: b}
-					] : null
-				}));
-			});
-
-			const fragment = Fragment.fromArray(nodes);
-			const slice = Slice.maxOpen(fragment);
-
-			return slice;
+const clipboardTextSerializer = (slice) => {
+	const nodes = [];
+	slice.content.nodesBetween(0, slice.content.size, node => {
+		if (node.isBlock) { 
+			nodes.push(node.textContent);
 		}
-	});
+	})
 
-	view.shouldUpdate = false;
-
-	docStructKey.getState(view.state).build(view.state);
-	const execResponse = execute(
-		view.state.doc, 
-		view.state, 
-		{}, 
-		docStructKey.getState(view.state)
-	);
-
-	view.shouldUpdate = execResponse.docChanged;
-	view.updateState(execResponse.currentState)
-
-	const tr = view.state.tr;
-	tr.setMeta('forceUpdate', true);
-	view.dispatch(tr);
-
-	let lastUpdated = Date.now();
-
-	const loop = () => {
-		const now = Date.now();
-
-		if (view.shouldUpdate && now - lastUpdated > MAX_TICK) {
-			const execResponse = execute(
-				view.state.doc, 
-				view.state, 
-				{ addToHistory: false }, 
-				docStructKey.getState(view.state)
-			);
-
-			view.shouldUpdate = execResponse.docChanged;
-			view.updateState(execResponse.currentState);
-
-			lastUpdated = now;
-
-			collabOrchestrator.localSyncRequest();
-		}
-
-		requestAnimationFrame(loop);
-	};
-
-	requestAnimationFrame(loop);
-
-	const conn = new Connection(websocketUrl);
-	const collabState = new CollabState(version, version);
-	const collabOrchestrator = new CollabOrchestrator(collabState, conn, view, schema);
+	return nodes.join('\n');
 };
 
-// only run window scripts if in browser
-if (typeof window !== 'undefined') {
-	window.addEventListener('startQworp', e => {
-		const data = e.detail;
-		init(data.editor, data.version, data.doc, data.websocketUrl);
+const clipboardTextParser = (text, $context) => {
+	const blocks = text.split(/(?:\r\n?|\n)/);
+	const nodes = [];
+
+	blocks.forEach(b => {
+		nodes.push(Node.fromJSON(schema, {
+			type: 'block',
+			content: b ? [
+				{type: 'text', text: b}
+			] : null
+		}));
 	});
 
-	document.addEventListener("keydown", function(e) {
-		if (e.keyCode == 83 && (navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)) {
-			e.preventDefault();
+	const fragment = Fragment.fromArray(nodes);
+	const slice = Slice.maxOpen(fragment);
+
+	return slice;
+};
+
+class QworpEditor {
+	constructor () {
+		this.created = false;
+		this.view = null;
+		this.conn = null;
+		this.collabState = null;
+		this.collabOrchestrator = null;
+		this.lastUpdated = Date.now();
+	}
+
+	create (editor, version, doc, websocketUrl) {
+		const state = this.createState(doc, version);
+		const view = new EditorView(editor, {
+			state,
+			dispatchTransaction (tr) {
+				if (tr.docChanged) {
+					view.shouldUpdate = true;
+				}
+
+				const newState = view.state.apply(tr);
+				view.updateState(newState);
+			},
+
+			clipboardTextSerializer,
+			clipboardParser,
+			clipboardTextParser
+		});
+
+		view.shouldUpdate = false;
+
+		this.created = true;
+		this.view = view;
+		this.conn = new Connection(websocketUrl);
+		this.collabState = new CollabState(version, version);
+		this.collabOrchestrator = new CollabOrchestrator(this.collabState, this.conn, this.view, schema);
+
+		this.triggerUpdate();
+		requestAnimationFrame(this.loop.bind(this));
+	}
+
+	triggerUpdate () {
+		docStructKey.getState(this.view.state).build(this.view.state);
+		const execResponse = execute(
+			this.view.state.doc, 
+			this.view.state, 
+			{}, 
+			docStructKey.getState(this.view.state)
+		);
+
+		this.view.shouldUpdate = execResponse.docChanged;
+		this.view.updateState(execResponse.currentState)
+
+		const tr = this.view.state.tr;
+		tr.setMeta('forceUpdate', true);
+		this.view.dispatch(tr);
+	}
+
+	reload (doc, version) {
+		this.view.updateState(this.createState(doc, version));
+		this.triggerUpdate();
+	}
+
+	createState (doc, version) {
+		return EditorState.create({
+			doc: schema.nodeFromJSON(doc),
+			schema,
+			plugins: [
+				docStructPlugin(docStructKey),
+				history(),
+				indentKeymap(),
+				keymap({ "Mod-z": undo, "Mod-y": redo }),
+				keymap(baseKeymap),
+				decorationPlugin,
+				nodeviewPlugin,
+				collab({ version: version })
+			]
+		});
+	}
+
+	loop () {
+		const now = Date.now();
+
+		if (this.view.shouldUpdate && now - this.lastUpdated > MAX_TICK) {
+			const execResponse = execute(
+				this.view.state.doc, 
+				this.view.state, 
+				{ addToHistory: false }, 
+				docStructKey.getState(this.view.state)
+			);
+
+			this.view.shouldUpdate = execResponse.docChanged;
+			this.view.updateState(execResponse.currentState);
+
+			this.lastUpdated = now;
+			this.collabOrchestrator.localSyncRequest();
 		}
-	}, false);	
+
+		requestAnimationFrame(this.loop.bind(this));
+	}
 }
 
-export default init;
+export default QworpEditor;

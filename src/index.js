@@ -1,5 +1,5 @@
 import schema from './schema';
-import editor from './editor';
+import QworpEditor from './editor';
 
 import Executor from './actions/execute';
 import DocumentStructure from './tree/document';
@@ -11,7 +11,7 @@ import { ensureSelectorResult } from './actions/validate';
 
 export {
 	schema,
-	editor,
+	QworpEditor,
 
 	Executor,
 	DocumentStructure,
