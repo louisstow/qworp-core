@@ -34,9 +34,31 @@ const createIndent = (n) => {
 	return s;
 };
 
+// remove the head of the text
+// note: this does not trim the tail
+const trimHead = (text, head, tail) => {
+	const trimmedTail = tail && text.endsWith(tail) ?
+		text.substring(0, text.length - tail.length) : text;
+
+	return head && trimmedTail.startsWith(head) ? 
+				text.substr(head.length) : text;
+};
+
+// remove the tail of the text
+// note: this does not trim the head
+const trimTail = (text, head, tail) => {
+	const trimmedHead = head && text.startsWith(head) ?
+		text.substr(head.length) : text;
+
+	return tail && trimmedHead.endsWith(tail) ? 
+				text.substring(0, text.length - tail.length) : text;
+};
+
 export {
 	recurseTree,
 	getUniqueSubtrees,
 	uniqueStdin,
-	createIndent
+	createIndent,
+	trimHead,
+	trimTail
 };

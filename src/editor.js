@@ -210,6 +210,9 @@ class QworpEditor {
 	}
 
 	reload (doc, version) {
+		this.collabState = new CollabState(version, version);
+		this.collabOrchestrator = new CollabOrchestrator(this.collabState, this.conn, this.view, schema);
+
 		this.view.updateState(this.createState(doc, version));
 		this.triggerUpdate();
 	}

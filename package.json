@@ -1,6 +1,6 @@
 {
   "name": "qworp-core",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Core of QWORP client",
   "dependencies": {
     "prosemirror-collab": "^1.2.0",

@@ -24,12 +24,13 @@ function addtag (stdin, args) {
 		const block = this.docStruct.find(b.from);
 
 		const node = this.tr.doc.resolve(this.tr.mapping.map(b.from)).nodeAfter;
-		const tailLen = node ? node.attrs.tail.length : 0;
+		const text = node.textContent;
+		const tail = node.attrs.tail;
+		const tailLen = node && tail && text.endsWith(tail) ? node.attrs.tail.length : 0;
 
 		const exists = block.features.find(f => f.type === 'tag' && f.label === tag);
 		if (once && exists) { return; }
-
-		const text = node.textContent;
+		
 		const charBefore = text.substr(text.length - tailLen - 1, 1);
 
 		this.tr.insertText(

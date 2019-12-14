@@ -7,16 +7,9 @@ import {
 } from '../../validate';
 
 import {
-	uniqueStdin
+	uniqueStdin,
+	trimHead
 } from '../../utils';
-
-const trimHead = (text, head, tail) => {
-	const trimmed = tail && text.endsWith(tail) ?
-		text.substring(0, text.length - tail.length) : text;
-
-	return head && trimmed.startsWith(head) ? 
-				text.substr(head.length) : text;
-};
 
 function after (stdin, args) {
 	if (!ensureSelectorResult(stdin)) {
