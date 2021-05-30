@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig",
+  "exclude": ["node_modules", "**/*.spec.ts", "__mocks__"],
+  "include": ["src"],
+  "compilerOptions": {
+    "baseUrl": "./",
+    "rootDir": "./src",
+    "outDir": "./dist"
+  }
+}

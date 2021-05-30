@@ -1,49 +1,34 @@
-const path = require('path');
-const nodeExternals = require('webpack-node-externals');
+const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+const path = require("path");
 
-const clientConfig = {
-  mode: 'none',
-  target: 'web',
-  entry: './src/index.js',
-  output: {
-    path: path.resolve(__dirname, 'lib'),
-    filename: 'index.js',
-    libraryTarget: 'commonjs2'
+module.exports = {
+  mode: "development",
+  entry: {
+    index: "./src/index.ts"
   },
+  target: "web",
+  plugins: [
+    new ForkTsCheckerWebpackPlugin(),
+  ],
+
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/,
+        test: /\.tsx?$/,
+        loader: "ts-loader",
+        include: path.resolve(__dirname, "src"),
         exclude: /node_modules/,
-        use: {
-          loader: "babel-loader"
-        }
+        options: {
+          transpileOnly: true,
+        },
       }
-    ]
-  }
-};
-
-const testConfig = {
-  mode: 'none',
-  target: 'node',
-  entry: './tests/index.js',
-  output: {
-    path: path.resolve(__dirname, 'lib'),
-    filename: 'test.js'
+    ],
   },
-  node: {global: true, fs: 'empty'},
-  externals: [nodeExternals()],
-  module: {
-    rules: [
-      {
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        use: {
-          loader: "babel-loader"
-        }
-      }
-    ]
+  resolve: {
+    extensions: [".tsx", ".ts", ".js"],
+  },
+  output: {
+    filename: "[name].js",
+    path: path.resolve(__dirname, "dist"),
   }
 };
-
-module.exports = [ clientConfig, testConfig ];

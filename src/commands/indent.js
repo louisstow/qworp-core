@@ -1,5 +1,7 @@
 import { keymap } from "prosemirror-keymap";
-import { baseKeymap } from "prosemirror-commands";
+import { baseKeymap, splitBlock } from "prosemirror-commands";
+import { Slice, Fragment } from "prosemirror-model";
+import { ReplaceStep } from "prosemirror-transform";
 
 const countIndent = (s) => {
 	let i = 0;
@@ -63,7 +65,7 @@ function enter (state, dispatch, view) {
 		const tr = view.state.tr;
 		const from = view.state.selection.from;
 
-		tr.insertText(createIndent(indents), view.state.selection.from);
+		tr.insertText(createIndent(indents), from);
 
 		const resolved = tr.doc.resolve(from - 1);
 		const node = resolved.nodeAfter;

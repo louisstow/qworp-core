@@ -6,10 +6,12 @@ import {
 	E_REQUEST_LOCAL_SYNC,
 	E_SEND_REMOTE_CHANGES,
 	E_SEND_LOCAL_CHANGES,
+	E_TIMEOUT,
 
 	M_SENDABLE,
 	M_REQUEST_REMOTE_CHANGES,
-	M_SEND_LOCAL_CHANGES
+	M_SEND_LOCAL_CHANGES,
+	M_TIMEOUT
 } from './constants';
 
 class CollabOrchestrator {
@@ -25,6 +27,7 @@ class CollabOrchestrator {
 		this.collabState.on(E_REQUEST_LOCAL_SYNC, this.localSyncRequest.bind(this));
 		this.collabState.on(E_SEND_REMOTE_CHANGES, this.sendRemoteChanges.bind(this));
 		this.collabState.on(E_SEND_LOCAL_CHANGES, this.sendLocalChanges.bind(this));
+		this.collabState.on(E_TIMEOUT, this.timeout.bind(this));
 	}
 
 	onMessage (msg) {
@@ -39,12 +42,16 @@ class CollabOrchestrator {
 		}
 	}
 
+	timeout () {
+		this.collabState.handle(M_TIMEOUT);
+	}
+
 	applyChanges ({steps, clientIDs}) {
 		const schemaSteps = steps.map(s => Step.fromJSON(this.schema, s));
 		
 		this.document.dispatch(receiveTransaction(this.document.state, schemaSteps, clientIDs));
 		this.collabState.setLocalVersion(getVersion(this.document.state));
-	}	
+	}
 
 	localSyncRequest () {
 		const type = M_SENDABLE;

@@ -5,12 +5,14 @@ import {
 	E_APPLY_CHANGES,
 	E_SEND_REMOTE_CHANGES,
 	E_REQUEST_LOCAL_SYNC,
+	E_TIMEOUT,
 
 	M_INVALID_VERSION,
 	M_CONFIRMED,
 	M_RECV_REMOTE_CHANGES,
 	M_SENDABLE,
-	M_NEW_VERSION
+	M_NEW_VERSION,
+	M_TIMEOUT
 } from './constants';
 
 class State {
@@ -33,13 +35,26 @@ class LocalSync extends State {
 			version: this.changes.version,
 			clientID: this.changes.clientID
 		});
+
+		this.timeoutId = setTimeout(() => {
+			collab.emit(E_TIMEOUT);
+		}, 1000);
 	}
 
 	handle (collab, type, msg) {
 		if (type === M_INVALID_VERSION) {
+			clearTimeout(this.timeoutId);
 			collab.setServerVersion(msg.version);
+
+			if (collab.isLocalAhead()) {
+				window.dispatchEvent(new CustomEvent("RELOAD"));
+				return;
+			}
+
 			return new RemoteSync;
 		} else if (type === M_CONFIRMED) {
+			clearTimeout(this.timeoutId);
+
 			const steps = this.changes.steps.map(s => s.toJSON());
 			const clientIDs = this.changes.steps.map(s => this.changes.clientID);
 
@@ -48,6 +63,8 @@ class LocalSync extends State {
 
 			collab.emit(E_APPLY_CHANGES, { steps, clientIDs });
 
+			return new Idle;
+		} else if (type === M_TIMEOUT) {
 			return new Idle;
 		}
 	}
@@ -101,6 +118,10 @@ class CollabState extends EventEmitter {
 
 	needsRemoteSync () {
 		return this.localVersion < this.serverVersion;
+	}
+
+	isLocalAhead () {
+		return this.localVersion > this.serverVersion;
 	}
 
 	handle (type, msg) {

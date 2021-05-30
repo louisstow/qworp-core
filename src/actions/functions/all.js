@@ -63,6 +63,8 @@ import addtag from './tag/addtag';
 import removetag from './tag/removetag';
 import toggletag from './tag/toggletag';
 
+import on from './event/on';
+
 const allFunctions = {
 	after,
 	before,
@@ -128,6 +130,8 @@ const allFunctions = {
 	addtag,
 	removetag,
 	toggletag,
+
+	on,
 
 	'>': children,
 	'*': descendants

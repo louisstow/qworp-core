@@ -1,3 +1,5 @@
+// import applyDevTools from "prosemirror-dev-tools";
+
 import { EditorState, Plugin, PluginKey } from "prosemirror-state";
 import { EditorView, DecorationSet, Decoration } from "prosemirror-view";
 import { Schema, Fragment, Slice, Node, DOMParser } from "prosemirror-model";
@@ -86,6 +88,20 @@ const execute = (originalDoc, state, meta, docStruct) => {
 			currentState = exec.currentState;
 		}
 	});
+
+	// clear new status
+	// const tr = currentState.tr;
+	// currentState.doc.descendants((node, pos) => {
+	// 	if (!node.isBlock) return;
+
+	// 	console.log(node.attrs);
+	// 	if (node.attrs.new) {
+	// 		console.log("set to false", node.from);
+	// 		tr.setNodeMarkup(pos, null, { ...node.attrs, new: false });
+	// 	}
+	// });
+
+	// currentState = currentState.apply(tr);
 
 	return { docChanged, currentState };
 };
@@ -180,6 +196,8 @@ class QworpEditor {
 			clipboardTextParser
 		});
 
+		// applyDevTools(view);
+
 		view.shouldUpdate = false;
 
 		this.created = true;
@@ -188,11 +206,16 @@ class QworpEditor {
 		this.collabState = new CollabState(version, version);
 		this.collabOrchestrator = new CollabOrchestrator(this.collabState, this.conn, this.view, schema);
 
+		window['conn'] = this.conn;
+		window['collabState'] = this.collabState;
+		window['collabOrchestrator'] = this.collabOrchestrator;
+
 		this.triggerUpdate();
 		requestAnimationFrame(this.loop.bind(this));
 	}
 
 	triggerUpdate () {
+		console.log('editor triggerUpdate');
 		docStructKey.getState(this.view.state).build(this.view.state);
 		const execResponse = execute(
 			this.view.state.doc, 
