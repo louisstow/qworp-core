@@ -41,5 +41,18 @@ type BlockAttrs = {
   id: string;
 };
 
-export { BlockAttrs };
+const defaultAttrs: BlockAttrs = {
+  visible: true,
+  underline: false,
+  bold: false,
+  italic: false,
+  strikethrough: false,
+  color: "",
+  background: "",
+  tail: "",
+  head: "",
+  id: "",
+};
+
+export { BlockAttrs, defaultAttrs };
 export default schema;

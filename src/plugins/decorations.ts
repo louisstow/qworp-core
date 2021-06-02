@@ -1,8 +1,10 @@
-import { Plugin, PluginKey, Transaction } from "prosemirror-state";
+import { EditorState, Plugin, PluginKey, Transaction } from "prosemirror-state";
 import { DecorationSet, Decoration, EditorView } from "prosemirror-view";
 
 import { parse, ProgramStep } from "../actions/parse";
 import Executor from "../actions/execute";
+
+import { NEEDS_EXECUTE } from "../events";
 
 import allFunctions from "../actions/functions/all";
 import {
@@ -13,27 +15,9 @@ import {
   TextFeature,
 } from "../tree/document";
 
-const buttonFn = (
-  label: string,
-  ast: ProgramStep[] | undefined,
-  blockFrom: number,
-  docStruct: DocumentStructure
-) => {
-  return (view: EditorView) => {
-    let node = document.createElement("button");
-    node.textContent = label;
-    // @ts-ignore
-    node.blockFrom = blockFrom;
-    // @ts-ignore
-    node.docStruct = docStruct;
-    node.className = "button";
-
-    // @ts-ignore
-    node.code = ast;
-
-    return node;
-  };
-};
+const buttonHandler: {
+  [k: string]: (state: EditorState) => Executor | undefined;
+} = {};
 
 const decorateButton = (
   docStruct: DocumentStructure,
@@ -41,13 +25,22 @@ const decorateButton = (
   set: DecorationSet,
   f: ButtonFeature
 ) => {
+  const key = `${f.blockFrom}:${f.label}:${f.code}`;
+  const node = document.createElement("button");
+  node.id = key;
+  node.className = "button";
+  node.textContent = f.label;
+
+  buttonHandler[key] = (state: EditorState) => {
+    return (
+      f.ast &&
+      new Executor(f.ast, f.blockFrom, state, {}, docStruct, allFunctions)
+    );
+  };
+
   return set.add(tr.doc, [
     Decoration.inline(f.from, f.to, { class: "code button" }),
-    Decoration.widget(
-      f.from,
-      buttonFn(f.label, f.ast, f.blockFrom, docStruct),
-      { key: `${f.blockFrom}:${f.label}:${f.code}` }
-    ),
+    Decoration.widget(f.from, node, { key }),
   ]);
 };
 
@@ -124,14 +117,14 @@ const decorationPlugin: Plugin = new Plugin({
       return DecorationSet.empty;
     },
 
-    apply(tr, set) {
-      const forceUpdate = tr.getMeta("forceUpdate");
+    apply(tr, set: DecorationSet) {
+      const forceUpdate = Boolean(tr.getMeta("forceUpdate"));
 
       if (!tr.docChanged && !forceUpdate) {
         return set.map(tr.mapping, tr.doc);
       }
 
-      const docStruct = tr.getMeta("docStruct");
+      const docStruct = tr.getMeta("docStruct") as DocumentStructure;
       return generateDecorations(docStruct, tr, set);
     },
   },
@@ -146,29 +139,25 @@ const decorationPlugin: Plugin = new Plugin({
         const node = event?.target as HTMLElement;
 
         if (node?.tagName == "BUTTON") {
-          const exec = new Executor(
-            // @ts-ignore
-            node.code,
-            // @ts-ignore
-            node.blockFrom,
-            view.state,
-            {},
-            // @ts-ignore
-            node.docStruct,
-            allFunctions
-          );
+          const exec = buttonHandler[node.id]?.(view.state);
+          if (!exec) {
+            return false;
+          }
 
           exec.setDomAtPos(view.domAtPos.bind(view));
 
           exec.execute();
           view.updateState(exec.currentState);
-          // @ts-ignore
-          view.shouldUpdate = exec.shouldUpdate;
+
+          if (exec.docChanged) {
+            window.dispatchEvent(new Event(NEEDS_EXECUTE));
+          }
 
           event.stopPropagation();
           event.preventDefault();
           return false;
         }
+
         return true;
       },
 

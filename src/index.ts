@@ -1,22 +1,20 @@
-import schema from './schema';
-import QworpEditor from './editor';
+import schema from "./schema";
+import QworpEditor from "./editor";
 
-import Executor from './actions/execute';
-import DocumentStructure from './tree/document';
+import Executor from "./actions/execute";
+import { DocumentStructure } from "./tree/document";
 
-import readonlyFunctions from './actions/functions/readonly';
-import { parse } from './actions/parse';
+import readonlyFunctions from "./actions/functions/readonly";
+import { parse } from "./actions/parse";
 
-import { ensureSelectorResult } from './actions/validate';
+import { ensureSelectorResult } from "./actions/validate";
 
 export {
-	schema,
-	QworpEditor,
-
-	Executor,
-	DocumentStructure,
-
-	parse,
-	readonlyFunctions,
-	ensureSelectorResult
+  schema,
+  QworpEditor,
+  Executor,
+  DocumentStructure,
+  parse,
+  readonlyFunctions,
+  ensureSelectorResult,
 };

@@ -2,14 +2,12 @@ const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
 const path = require("path");
 
 module.exports = {
-  mode: "development",
+  mode: "none",
   entry: {
-    index: "./src/index.ts"
+    index: "./src/index.ts",
   },
   target: "web",
-  plugins: [
-    new ForkTsCheckerWebpackPlugin(),
-  ],
+  plugins: [new ForkTsCheckerWebpackPlugin()],
 
   module: {
     rules: [
@@ -21,7 +19,7 @@ module.exports = {
         options: {
           transpileOnly: true,
         },
-      }
+      },
     ],
   },
   resolve: {
@@ -30,5 +28,6 @@ module.exports = {
   output: {
     filename: "[name].js",
     path: path.resolve(__dirname, "dist"),
-  }
+    libraryTarget: "commonjs2",
+  },
 };

@@ -12,7 +12,7 @@ class Executor {
   functions: { [k: string]: Function };
   tr: Transaction;
   mapping: Mapping;
-  shouldUpdate: boolean;
+  docChanged: boolean;
   domAtPos: Function | null;
 
   constructor(
@@ -35,7 +35,7 @@ class Executor {
 
     this.setMeta(this.tr);
 
-    this.shouldUpdate = false;
+    this.docChanged = false;
 
     // if first function isnt a selector, make it this
     if (
@@ -56,7 +56,7 @@ class Executor {
   }
 
   apply() {
-    this.shouldUpdate = Boolean(this.tr.docChanged || this.meta.forceUpdate);
+    this.docChanged = Boolean(this.tr.docChanged || this.meta.forceUpdate);
     this.currentState = this.currentState.apply(this.tr);
     this.mapping.appendMapping(this.tr.mapping);
 
@@ -64,7 +64,7 @@ class Executor {
     this.tr = this.currentState.tr;
     this.setMeta(this.tr);
 
-    if (this.shouldUpdate) {
+    if (this.docChanged) {
       console.log("Executor apply");
       this.docStruct.build(this.currentState);
     }
@@ -107,8 +107,8 @@ class Executor {
     );
 
     const out = subexecute.execute();
-    if (subexecute.shouldUpdate) {
-      this.shouldUpdate = true;
+    if (subexecute.docChanged) {
+      this.docChanged = true;
       this.blockFrom = subexecute.mapping.map(this.blockFrom);
       this.mapping.appendMapping(subexecute.mapping);
     }

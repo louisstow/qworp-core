@@ -28,9 +28,10 @@ const generateStyle = (attrs: BlockAttrs) => {
 
 class BlockView {
   dom: HTMLElement;
+  contentDOM: HTMLElement;
 
   constructor(node: Node) {
-    this.dom = document.createElement("div");
+    this.dom = this.contentDOM = document.createElement("div");
     this.dom.classList.add("block");
 
     this.render(node);

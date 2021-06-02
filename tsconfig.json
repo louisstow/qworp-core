@@ -5,7 +5,7 @@
     "outDir": "./lib",
     "target": "es6",
     "module": "commonjs",
-    "moduleResolution": "node",
+    // "moduleResolution": "",
     "lib": ["ES2020", "dom"],
     "allowJs": true,
     "strict": true,

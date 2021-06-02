@@ -31,7 +31,7 @@ class SelectorResult {
 
 // query: ['#A', '#B']
 const selector = (docStruct: DocumentStructure, query: string[]) => {
-  let results = docStruct.index[query[0]];
+  let results = docStruct.findByTag(query[0]);
   let i = 1;
 
   // clone array
@@ -42,7 +42,7 @@ const selector = (docStruct: DocumentStructure, query: string[]) => {
   }
 
   while (i < query.length) {
-    const blocks = docStruct.index[query[i]] || [];
+    const blocks = docStruct.findByTag(query[i]);
     results = results.filter((r) => blocks.indexOf(r) !== -1);
     i++;
   }
@@ -81,8 +81,8 @@ const selectorNearest = (
   }
 
   // grab first in the global index
-  const tags = docStruct.index[tag];
-  if (!tags || !tags.length) {
+  const tags = docStruct.findByTag(tag);
+  if (!tags.length) {
     return null;
   }
 

@@ -55,6 +55,8 @@ class Block {
   depth: number;
   size: number;
   parent: Block | null;
+  id: string;
+  text: string;
   children: Block[];
   features: Feature[];
 
@@ -64,6 +66,8 @@ class Block {
     this.depth = 0;
     this.size = 0;
     this.parent = null;
+    this.id = "";
+    this.text = "";
     this.children = [];
     this.features = [];
   }
@@ -72,11 +76,40 @@ class Block {
     this.children.push(node);
     node.parent = this;
   }
+
+  cloneFeaturesFromBlock(block: Block, blockDiff: number) {
+    // remap features unto current block
+    this.features = block.features.map((f) => {
+      f.from += blockDiff;
+      f.to += blockDiff;
+      f.blockFrom += blockDiff;
+      f.block = this;
+
+      if (f.type === "text") {
+        f.codeFrom += blockDiff;
+        f.labelFrom += blockDiff;
+        f.labelTo += blockDiff;
+      }
+
+      return f;
+    });
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      from: this.from,
+      to: this.to,
+      depth: this.depth,
+      size: this.size,
+    };
+  }
 }
 
 class DocumentStructure {
   lastError: string | null;
-  index: { [k: string]: Block[] };
+  tagIndex: { [k: string]: Block[] };
+  idIndex: { [k: string]: Block };
   features: Feature[];
   root: Block | null;
   list: Block[];
@@ -85,14 +118,16 @@ class DocumentStructure {
     this.reset();
     this.lastError = null;
 
-    this.index = {};
+    this.tagIndex = {};
+    this.idIndex = {};
     this.features = [];
     this.root = null;
     this.list = [];
   }
 
   reset() {
-    this.index = {};
+    this.tagIndex = {};
+    this.idIndex = {};
     this.features = [];
     this.root = null;
     this.list = [];
@@ -130,16 +165,25 @@ class DocumentStructure {
     const found: Block[] = [];
     for (let i = 0; i < this.list.length; ++i) {
       const b = this.list[i];
-      if (from >= b.from && from <= b.to) {
+      if (from >= b.from && from < b.to) {
         found.push(b);
-      }
-      if (to >= b.from && to <= b.to) {
+      } else if (to > b.from && to <= b.to) {
         found.push(b);
       }
 
-      // todo: assuming this is sorted can exit early
+      if (to < b.from) {
+        break;
+      }
     }
     return found;
+  }
+
+  findByTag(query: string) {
+    return this.tagIndex[query] || [];
+  }
+
+  findById(id: string): Block | null {
+    return this.idIndex[id] || null;
   }
 
   addFeature(feature: Feature, block: Block) {
@@ -156,18 +200,21 @@ class DocumentStructure {
   }
 
   parseTagToken(t: TagToken, block: Block, localPos: number): TagFeature {
-    if (!this.index[t.label]) this.index[t.label] = [];
+    if (!this.tagIndex[t.label]) {
+      this.tagIndex[t.label] = [];
+    }
 
     // only add block once
-    if (this.index[t.label].indexOf(block) === -1)
-      this.index[t.label].push(block);
+    if (this.tagIndex[t.label].indexOf(block) === -1) {
+      this.tagIndex[t.label].push(block);
+    }
 
     return {
       type: "tag",
       label: t.label,
       value: t.value,
-      from: block.from + localPos + 1,
-      to: block.to + localPos + 1,
+      from: t.from + localPos + 1,
+      to: t.to + localPos + 1,
       blockFrom: block.from,
       block,
     };
@@ -178,8 +225,8 @@ class DocumentStructure {
       type: "imm",
       ast: this.parseFeatureCode(t.code),
       code: t.code,
-      from: block.from + localPos + 1,
-      to: block.to + localPos + 1,
+      from: t.from + localPos + 1,
+      to: t.to + localPos + 1,
       blockFrom: block.from,
       block,
     };
@@ -195,8 +242,8 @@ class DocumentStructure {
       ast: this.parseFeatureCode(t.code),
       code: t.code,
       label: t.label,
-      from: block.from + localPos + 1,
-      to: block.to + localPos + 1,
+      from: t.from + localPos + 1,
+      to: t.to + localPos + 1,
       blockFrom: block.from,
       block,
     };
@@ -208,8 +255,8 @@ class DocumentStructure {
       ast: this.parseFeatureCode(t.code),
       code: t.code,
       label: t.label,
-      from: block.from + localPos + 1,
-      to: block.to + localPos + 1,
+      from: t.from + localPos + 1,
+      to: t.to + localPos + 1,
       labelFrom: t.labelFrom,
       labelTo: t.labelTo,
       codeFrom: t.codeFrom,
@@ -218,39 +265,28 @@ class DocumentStructure {
     };
   }
 
-  build(state: EditorState | Transaction) {
+  buildTree(state: EditorState | Transaction) {
     this.reset();
 
     const rootBlock = new Block();
+    const blockStack = [rootBlock];
     let previousDepth = -1;
-    let blockStack = [rootBlock];
+    rootBlock.id = "@@root";
 
     state.doc.descendants((node, pos) => {
-      if (!node.isBlock) return;
+      if (!node.isBlock) {
+        return;
+      }
 
-      let line = node.textContent;
-      let depth = countIndent(line);
-      let block = new Block();
+      const depth = countIndent(node.textContent);
+      const block = new Block();
 
+      block.id = String(node.attrs?.id || "");
       block.from = pos;
       block.to = pos + node.nodeSize;
       block.depth = depth;
       block.size = node.nodeSize;
-
-      const features = extract(node.textContent);
-      features.forEach((f) => {
-        if (f.type == "empty") {
-          return;
-        } else if (f.type === "tag") {
-          this.addFeature(this.parseTagToken(f, block, pos), block);
-        } else if (f.type === "imm") {
-          this.addFeature(this.parseImmToken(f, block, pos), block);
-        } else if (f.type === "button") {
-          this.addFeature(this.parseButtonToken(f, block, pos), block);
-        } else if (f.type === "text") {
-          this.addFeature(this.parseTextToken(f, block, pos), block);
-        }
-      });
+      block.text = node.textContent;
 
       if (depth > previousDepth) {
         blockStack[blockStack.length - 1].addChild(block);
@@ -268,9 +304,33 @@ class DocumentStructure {
       }
 
       this.list.push(block);
+      if (node.attrs.id) {
+        this.idIndex[node.attrs.id] = block;
+      }
     });
 
     this.root = rootBlock;
+  }
+
+  extractFeaturesOntoBlock(block: Block) {
+    extract(block.text).forEach((f) => {
+      if (f.type == "empty") {
+        return;
+      } else if (f.type === "tag") {
+        this.addFeature(this.parseTagToken(f, block, block.from), block);
+      } else if (f.type === "imm") {
+        this.addFeature(this.parseImmToken(f, block, block.from), block);
+      } else if (f.type === "button") {
+        this.addFeature(this.parseButtonToken(f, block, block.from), block);
+      } else if (f.type === "text") {
+        this.addFeature(this.parseTextToken(f, block, block.from), block);
+      }
+    });
+  }
+
+  build(state: EditorState | Transaction) {
+    this.buildTree(state);
+    this.list.forEach((b) => this.extractFeaturesOntoBlock(b));
   }
 }
 

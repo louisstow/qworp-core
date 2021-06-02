@@ -43,7 +43,7 @@
   },
   "author": "Louis Stowasser <louisstow@gmail.com>",
   "homepage": "https://qworp.com",
-  "main": "./lib/index.js",
+  "main": "./dist/index.js",
   "license": "MIT",
   "repository": {
     "type": "git",
